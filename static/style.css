@@ -1,0 +1,281 @@
+/* POI field survey — built for one thumb, bright sun, and a cheap Android. */
+
+:root {
+  --ink:        #14202B;
+  --ink-soft:   #52626F;
+  --paper:      #F7F8F6;
+  --card:       #FFFFFF;
+  --line:       #D3DAE0;
+  --signal:     #1A5FB4;
+  --signal-dim: #E8F0FA;
+  --done:       #1F7A4D;
+  --pending:    #B26A00;
+  --alert:      #B3261E;
+  --tap:        48px;
+  --radius:     6px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding-bottom: calc(var(--tap) + 32px + env(safe-area-inset-bottom));
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- header ---------- */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 16px 8px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+}
+
+.bar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.bar h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+
+.link { color: #9EC5F0; text-decoration: none; font-size: 15px; padding: 6px; }
+.link:hover { text-decoration: underline; }
+
+.progress { height: 4px; background: rgba(255,255,255,.22); border-radius: 2px; margin: 10px 0 8px; }
+.progress span { display: block; height: 100%; width: 0; background: #6FB1F5; border-radius: 2px; transition: width .25s ease; }
+
+.bar-meta { display: flex; justify-content: space-between; align-items: center; margin: 0; font-size: 13px; color: #B7C4CF; min-height: 24px; }
+
+.queue {
+  border: 1px solid var(--pending);
+  background: #3A2A10;
+  color: #F5C77E;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ---------- form sheet ---------- */
+
+.sheet { max-width: 620px; margin: 0 auto; padding: 16px; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.page > h2 {
+  margin: 4px 0 4px;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.page > .page-hint { margin: 0 0 18px; color: var(--ink-soft); font-size: 15px; }
+
+.field {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 14px 16px;
+  margin-bottom: 12px;
+}
+
+.field.required { border-left-color: var(--signal); }
+.field.invalid  { border-left-color: var(--alert); }
+
+.field > label,
+.field > .field-label {
+  display: block;
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.req-mark { color: var(--alert); margin-left: 3px; }
+
+.hint { display: block; color: var(--ink-soft); font-size: 14px; margin-bottom: 10px; }
+
+.error { display: none; color: var(--alert); font-size: 14px; margin-top: 8px; font-weight: 500; }
+.field.invalid .error { display: block; }
+
+input[type=text], input[type=tel], input[type=number], select, textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* keeps iOS from zooming on focus */
+}
+
+textarea { min-height: 96px; resize: vertical; }
+
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, .choice:focus-within {
+  outline: 3px solid var(--signal);
+  outline-offset: 1px;
+}
+
+/* radio / checkbox stacks — full-width rows, not fiddly dots */
+
+.choices { display: grid; gap: 8px; }
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.choice input { width: 20px; height: 20px; accent-color: var(--signal); flex: none; }
+.choice:has(input:checked) { border-color: var(--signal); background: var(--signal-dim); font-weight: 550; }
+
+/* ---------- geopoint ---------- */
+
+.geo-readout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.geo-readout div { background: #fff; padding: 9px 10px; }
+.geo-readout dt { margin: 0 0 2px; font-size: 12px; color: var(--ink-soft); }
+.geo-readout dd { margin: 0; font-size: 15px; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.accuracy-good { color: var(--done); }
+.accuracy-poor { color: var(--pending); }
+
+/* ---------- photo ---------- */
+
+.photo-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 132px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.photo-drop img { max-width: 100%; max-height: 260px; border-radius: 4px; display: block; }
+
+/* ---------- buttons ---------- */
+
+.btn {
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.primary { background: var(--signal); color: #fff; }
+.btn.primary:hover { background: #164F97; }
+.btn.ghost { background: #fff; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { background: #EEF1F4; }
+.btn[disabled] { opacity: .5; cursor: default; }
+
+.btn.wide { width: 100%; }
+.btn.row  { flex: 1; }
+
+.btn-pair { display: flex; gap: 8px; }
+
+.actions {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+
+.actions .btn { flex: 1; }
+.actions #next-btn, .actions #submit-btn { flex: 1.6; }
+
+/* ---------- toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tap) + 28px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: 90vw;
+  background: var(--ink);
+  color: #fff;
+  padding: 11px 16px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  box-shadow: 0 6px 20px rgba(20,32,43,.28);
+}
+
+.toast.ok   { background: var(--done); }
+.toast.warn { background: var(--pending); }
+.toast.bad  { background: var(--alert); }
+
+/* ---------- queue panel ---------- */
+
+.panel {
+  width: min(560px, 92vw);
+  border: none;
+  border-radius: 10px;
+  padding: 22px;
+  color: var(--ink);
+}
+.panel::backdrop { background: rgba(20,32,43,.55); }
+.panel h2 { margin: 0 0 8px; font-size: 19px; }
+.panel-note { margin: 0 0 16px; color: var(--ink-soft); font-size: 14px; }
+
+.queue-list { list-style: none; margin: 0 0 18px; padding: 0; max-height: 46vh; overflow-y: auto; }
+.queue-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+.queue-list .state { color: var(--pending); font-size: 13px; white-space: nowrap; }
+.queue-list .state.draft { color: var(--ink-soft); }
+.queue-list .empty { display: block; color: var(--ink-soft); padding: 12px 0; }
+
+.panel-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.panel-actions .btn { flex: 1; min-width: 130px; }
+
+/* ---------- review ---------- */
+
+.review { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.review div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.review div:last-child { border-bottom: none; }
+.review dt { margin: 0; color: var(--ink-soft); }
+.review dd { margin: 0; text-align: right; font-weight: 550; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

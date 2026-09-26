@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survey coverage — POI field survey</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  body { padding-bottom: 0; }
+  #map { height: calc(100vh - 118px); width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 9px 16px; background: #fff; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+  .leaflet-popup-content { font: 15px/1.45 system-ui, sans-serif; margin: 12px 14px; }
+  .leaflet-popup-content h3 { margin: 0 0 4px; font-size: 16px; }
+  .leaflet-popup-content p { margin: 0 0 6px; color: #52626F; }
+  .leaflet-popup-content img { width: 100%; border-radius: 4px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-row">
+    <h1>Survey coverage</h1>
+    <a class="link" href="/">Collect</a>
+  </div>
+  <p class="bar-meta"><span id="tally">Loading records…</span></p>
+</header>
+
+<div class="legend">
+  <span><i class="dot" style="background:#1F7A4D"></i>Unchanged</span>
+  <span><i class="dot" style="background:#1A5FB4"></i>Renamed</span>
+  <span><i class="dot" style="background:#7B4FBF"></i>Replaced</span>
+  <span><i class="dot" style="background:#6B7784"></i>Closed</span>
+  <span><i class="dot" style="background:#B26A00"></i>New</span>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const COLORS = {
+  unchanged: "#1F7A4D", renamed: "#1A5FB4", replaced: "#7B4FBF",
+  closed: "#6B7784", new: "#B26A00",
+};
+
+const map = L.map("map").setView([12.9716, 77.5946], 12);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors',
+}).addTo(map);
+
+const escapeHtml = (s) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function popup(p) {
+  const bits = [`<h3>${escapeHtml(p.poi_name || "Unnamed")}</h3>`];
+  bits.push(`<p>${escapeHtml(p.status)}${p.category ? " · " + escapeHtml(p.category) : ""}</p>`);
+  if (p.prior_name) bits.push(`<p>Was: ${escapeHtml(p.prior_name)}</p>`);
+  if (p.address) bits.push(`<p>${escapeHtml(p.address)}</p>`);
+  if (p.notes) bits.push(`<p>${escapeHtml(p.notes)}</p>`);
+  if (p.surveyor) bits.push(`<p>Surveyed by ${escapeHtml(p.surveyor)}</p>`);
+  if (p.photo_url) bits.push(`<img src="${escapeHtml(p.photo_url)}" alt="Storefront photo">`);
+  return bits.join("");
+}
+
+fetch("/api/submissions")
+  .then((r) => r.json())
+  .then((fc) => {
+    const layer = L.geoJSON(fc, {
+      pointToLayer: (feat, latlng) =>
+        L.circleMarker(latlng, {
+          radius: 7,
+          color: "#fff",
+          weight: 2,
+          fillColor: COLORS[feat.properties.status] || "#6B7784",
+          fillOpacity: 0.95,
+        }),
+      onEachFeature: (feat, lyr) => lyr.bindPopup(popup(feat.properties)),
+    }).addTo(map);
+
+    const n = fc.features.length;
+    document.getElementById("tally").textContent =
+      n ? `${n} record${n > 1 ? "s" : ""} collected` : "No records yet — collect one to see it here.";
+    if (n) map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
+  })
+  .catch(() => {
+    document.getElementById("tally").textContent = "Couldn't reach the API. Check the Flask server is running.";
+  });
+</script>
+</body>
+</html>
